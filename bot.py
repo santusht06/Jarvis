@@ -285,25 +285,30 @@ def validate_patch(old: str, new: str) -> Tuple[bool, str]:
         return False, "New content is empty."
 
     old_lines = old.splitlines()
-    new_lines = new.splitlines()
+    new_lines  = new.splitlines()
 
-    # Must retain at least 75% of original lines
-    if len(old_lines) > 5 and len(new_lines) < len(old_lines) * 0.75:
+    # If old README is a stub (≤8 lines), allow up to 95% change (initial creation)
+    is_stub = len(old_lines) <= 8
+    change_cap = 0.95 if is_stub else MAX_CHANGE_RATIO
+
+    # Must retain at least 75% of original lines (skip for stubs)
+    if not is_stub and len(old_lines) > 5 and len(new_lines) < len(old_lines) * 0.75:
         return False, f"Too many lines removed ({len(old_lines)} → {len(new_lines)})."
 
     # Change ratio cap
     ratio = difflib.SequenceMatcher(None, old_lines, new_lines).ratio()
-    if ratio < (1 - MAX_CHANGE_RATIO):
-        return False, f"Patch alters {round((1-ratio)*100,1)}% — exceeds {int(MAX_CHANGE_RATIO*100)}% daily cap."
+    if ratio < (1 - change_cap):
+        return False, f"Patch alters {round((1-ratio)*100,1)}% — exceeds {int(change_cap*100)}% daily cap."
 
     # Unclosed code fences
     if new.count("```") % 2 != 0:
         return False, "Patch introduced unclosed code fences."
 
-    # Primary title preserved
-    h1s = [l for l in old_lines if l.startswith("# ")]
-    if h1s and h1s[0].strip() not in new:
-        return False, f"Primary title '{h1s[0].strip()}' was removed."
+    # Primary title preserved (skip for stubs — title may be missing originally)
+    if not is_stub:
+        h1s = [l for l in old_lines if l.startswith("# ")]
+        if h1s and h1s[0].strip() not in new:
+            return False, f"Primary title '{h1s[0].strip()}' was removed."
 
     return True, "OK"
 
@@ -645,6 +650,11 @@ def run():
             log.info("Groq unavailable — using rule-based patcher")
             new_readme, _ = rule_based_patch(name, current_readme, context)
             source = "Rule-based patcher"
+
+        # Auto-fix unclosed code fences (Groq sometimes forgets closing ```)
+        if new_readme.count("```") % 2 != 0:
+            new_readme = new_readme.rstrip() + "\n```\n"
+            log.info("Auto-fixed unclosed code fence in AI output")
 
         # 8. Safety guardrails — reject destructive patches
         ok, reason = validate_patch(current_readme, new_readme)
