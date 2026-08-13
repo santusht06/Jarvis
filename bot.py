@@ -478,6 +478,32 @@ def git_commit_and_push(local_path: str, proj_name: str,
     if not os.path.exists(os.path.join(local_path, ".git")):
         return {"success": False, "error": "Not a git repository"}
 
+def get_gh_token() -> str:
+    """Retrieves GitHub token from env or gh CLI."""
+    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    if not token:
+        try:
+            res = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, timeout=5)
+            if res.returncode == 0 and res.stdout.strip():
+                token = res.stdout.strip()
+        except Exception:
+            pass
+    return token or ""
+
+
+def git_commit_and_push(local_path: str, proj_name: str,
+                        old_readme: str, new_readme: str,
+                        summary: str) -> Dict[str, Any]:
+    """
+    Makes 3-4 atomic commits directly to main branch.
+    Only modifies README.md. Pushes once at the end.
+    """
+    readme_path = os.path.join(local_path, "README.md")
+    
+    # Verify git repo
+    if not os.path.exists(os.path.join(local_path, ".git")):
+        return {"success": False, "error": "Not a git repository"}
+
     try:
         # Ensure we're on main (or master)
         branch_res = subprocess.run(
@@ -488,13 +514,11 @@ def git_commit_and_push(local_path: str, proj_name: str,
         if current_branch not in ("main", "master"):
             # Try switching to main
             subprocess.run(["git", "checkout", "main"], cwd=local_path, capture_output=True)
-            subprocess.run(["git", "pull", "origin", "main", "--rebase"],
-                           cwd=local_path, capture_output=True)
 
-        # Configure git user if not set (for CI/bot environments)
-        subprocess.run(["git", "config", "user.email", "ai-readme-bot@local"],
+        # Configure git user if not set (for CI/bot/systemd environments)
+        subprocess.run(["git", "config", "user.email", "santushtkotai1221@gmail.com"],
                        cwd=local_path, capture_output=True)
-        subprocess.run(["git", "config", "user.name", "AI README Bot"],
+        subprocess.run(["git", "config", "user.name", "Santusht Kotai"],
                        cwd=local_path, capture_output=True)
 
         # Build 3-4 intermediate README states for streak commits
@@ -550,11 +574,31 @@ def git_commit_and_push(local_path: str, proj_name: str,
         if not commits_made:
             return {"success": False, "error": "No changes committed (README already up to date)"}
 
-        # Push all commits to main in one shot
-        push_res = subprocess.run(
-            ["git", "push", "origin", "HEAD"],
+        # Retrieve remote URL
+        remote_res = subprocess.run(
+            ["git", "remote", "get-url", "origin"],
             cwd=local_path, capture_output=True, text=True
         )
+        remote_url = remote_res.stdout.strip()
+
+        # Token authentication for non-interactive push
+        token = get_gh_token()
+        if token and "github.com" in remote_url:
+            # Reformat to authenticated HTTPS URL
+            clean_repo = remote_url.split("github.com/")[-1].replace("git@", "").replace(".git", "")
+            authenticated_url = f"https://x-access-token:{token}@github.com/{clean_repo}.git"
+            push_res = subprocess.run(
+                ["git", "push", authenticated_url, "HEAD"],
+                cwd=local_path, capture_output=True, text=True,
+                env={**os.environ, "GIT_TERMINAL_PROMPT": "0"}
+            )
+        else:
+            push_res = subprocess.run(
+                ["git", "push", "origin", "HEAD"],
+                cwd=local_path, capture_output=True, text=True,
+                env={**os.environ, "GIT_TERMINAL_PROMPT": "0"}
+            )
+
         if push_res.returncode != 0:
             log.warning(f"Push stderr: {push_res.stderr.strip()}")
             return {"success": False, "error": f"Push failed: {push_res.stderr.strip()}"}
