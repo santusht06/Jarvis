@@ -628,116 +628,119 @@ def run():
     # 2. Discover all projects
     discover_projects()
 
-    # 3. Pick the project with oldest last_maintained (round-robin)
+    # 3. Try projects one by one until one successfully commits & pushes (Streak Guarantee)
     projects = get_projects()
     if not projects:
         log.warning("No projects found. Exiting.")
         return
 
-    target   = projects[0]
-    pid      = target["id"]
-    name     = target["name"]
-    ptype    = target["type"]
-    path     = target["path_or_url"]
+    success_today = False
 
-    log.info(f"Selected: [{ptype.upper()}] {name} ({pid})")
+    for target in projects:
+        pid      = target["id"]
+        name     = target["name"]
+        ptype    = target["type"]
+        path     = target["path_or_url"]
 
-    # 4. Resolve local path — clone GitHub repos temporarily if needed
-    local_path = path
-    temp_dir   = None
+        log.info(f"Selected candidate: [{ptype.upper()}] {name} ({pid})")
 
-    if ptype == "github" and not os.path.isdir(path):
-        desktop_clone = os.path.expanduser(f"~/Desktop/{name}")
-        if os.path.isdir(desktop_clone):
-            local_path = desktop_clone
-        else:
-            log.info(f"Cloning {name} from GitHub (HTTPS)...")
-            temp_dir = tempfile.mkdtemp(prefix=f"bot_{name}_")
-            # Use HTTPS clone to avoid SSH key/timeout issues
-            clone_url = path if path.startswith("https://") else f"https://github.com/santusht06/{name}.git"
-            res = subprocess.run(
-                ["git", "clone", "--depth", "1", clone_url, temp_dir],
-                capture_output=True, text=True, timeout=120,
-                env={**os.environ, "GIT_TERMINAL_PROMPT": "0"}
-            )
-            if res.returncode != 0:
-                log.warning(f"Clone failed: {res.stderr.strip()[:200]}")
-                log_run(pid, "skipped", "Clone failed", "[]")
-                return
-            local_path = temp_dir
+        # 4. Resolve local path — clone GitHub repos temporarily if needed
+        local_path = path
+        temp_dir   = None
 
-    try:
-        # 5. Find README.md — ONLY file we care about
-        readme_path = find_readme(local_path)
-        if not readme_path:
-            log.info(f"No README.md found in {name}. Creating one...")
-            readme_path = os.path.join(local_path, "README.md")
-            with open(readme_path, "w", encoding="utf-8") as f:
-                f.write(f"# {name}\n\n")
+        if ptype == "github" and not os.path.isdir(path):
+            desktop_clone = os.path.expanduser(f"~/Desktop/{name}")
+            if os.path.isdir(desktop_clone):
+                local_path = desktop_clone
+            else:
+                log.info(f"Cloning {name} from GitHub (HTTPS)...")
+                temp_dir = tempfile.mkdtemp(prefix=f"bot_{name}_")
+                clone_url = path if path.startswith("https://") else f"https://github.com/santusht06/{name}.git"
+                res = subprocess.run(
+                    ["git", "clone", "--depth", "1", clone_url, temp_dir],
+                    capture_output=True, text=True, timeout=120,
+                    env={**os.environ, "GIT_TERMINAL_PROMPT": "0"}
+                )
+                if res.returncode != 0:
+                    log.warning(f"Clone failed for '{name}': {res.stderr.strip()[:200]}")
+                    mark_maintained(pid)
+                    continue
+                local_path = temp_dir
 
-        with open(readme_path, "r", encoding="utf-8", errors="ignore") as f:
-            current_readme = f.read()
+        try:
+            # 5. Find README.md — ONLY file we care about
+            readme_path = find_readme(local_path)
+            if not readme_path:
+                log.info(f"No README.md found in {name}. Creating stub...")
+                readme_path = os.path.join(local_path, "README.md")
+                with open(readme_path, "w", encoding="utf-8") as f:
+                    f.write(f"# {name}\n\n")
 
-        log.info(f"README loaded: {len(current_readme.splitlines())} lines")
+            with open(readme_path, "r", encoding="utf-8", errors="ignore") as f:
+                current_readme = f.read()
 
-        # 6. Build codebase context for Vector DB (read-only)
-        context_docs = read_project_context(local_path)
-        vector_store.index(pid, context_docs)
-        context_chunks = vector_store.search(pid, "install usage dependencies setup", top_k=4)
-        context = "\n---\n".join(context_chunks)
+            log.info(f"README loaded: {len(current_readme.splitlines())} lines")
 
-        # 7. Generate improved README via Groq AI
-        log.info("Calling Groq AI for surgical README improvements...")
-        new_readme = call_groq(name, current_readme, context)
+            # 6. Build codebase context for Vector DB (read-only)
+            context_docs = read_project_context(local_path)
+            vector_store.index(pid, context_docs)
+            context_chunks = vector_store.search(pid, "install usage dependencies setup", top_k=4)
+            context = "\n---\n".join(context_chunks)
 
-        if new_readme:
-            source = f"Groq AI ({GROQ_MODEL})"
-            log.info(f"Groq returned improved README ({len(new_readme.splitlines())} lines)")
-        else:
-            log.info("Groq unavailable — using rule-based patcher")
-            new_readme, _ = rule_based_patch(name, current_readme, context)
-            source = "Rule-based patcher"
+            # 7. Generate improved README via Groq AI
+            log.info(f"Calling Groq AI for README patch on '{name}'...")
+            new_readme = call_groq(name, current_readme, context)
 
-        # Auto-fix unclosed code fences (Groq sometimes forgets closing ```)
-        if new_readme.count("```") % 2 != 0:
-            new_readme = new_readme.rstrip() + "\n```\n"
-            log.info("Auto-fixed unclosed code fence in AI output")
+            if new_readme:
+                source = f"Groq AI ({GROQ_MODEL})"
+                log.info(f"Groq returned improved README ({len(new_readme.splitlines())} lines)")
+            else:
+                log.info("Groq unavailable — using rule-based patcher")
+                new_readme, _ = rule_based_patch(name, current_readme, context)
+                source = "Rule-based patcher"
 
-        # 8. Safety guardrails — reject destructive patches
-        ok, reason = validate_patch(current_readme, new_readme)
-        if not ok:
-            log.warning(f"Patch rejected: {reason}")
-            log_run(pid, "rejected", reason, "[]")
-            return
+            # Auto-fix unclosed code fences
+            if new_readme.count("```") % 2 != 0:
+                new_readme = new_readme.rstrip() + "\n```\n"
+                log.info("Auto-fixed unclosed code fence in AI output")
 
-        if new_readme.strip() == current_readme.strip():
-            log.info("README already perfect — no changes needed.")
-            log_run(pid, "no_change", "Already up to date", "[]")
-            mark_maintained(pid)
-            return
+            # 8. Safety guardrails — reject destructive patches
+            ok, reason = validate_patch(current_readme, new_readme)
+            if not ok:
+                log.warning(f"Patch for '{name}' rejected by safety guardrails: {reason}")
+                mark_maintained(pid)
+                continue
 
-        diff = compute_diff(current_readme, new_readme)
-        log.info(f"Diff: {len([l for l in diff.splitlines() if l.startswith(('+','-'))])} changed lines")
+            if new_readme.strip() == current_readme.strip():
+                log.info(f"README for '{name}' already perfect — moving to next project")
+                mark_maintained(pid)
+                continue
 
-        added = len([l for l in diff.splitlines() if l.startswith('+') and not l.startswith('+++')])
-        summary = f"{source}: {added} lines improved"
+            diff = compute_diff(current_readme, new_readme)
+            added = len([l for l in diff.splitlines() if l.startswith('+') and not l.startswith('+++')])
+            summary = f"{source}: {added} lines improved"
 
-        # 9. Commit 3-4 times to main, push once (streak!)
-        result = git_commit_and_push(local_path, name, current_readme, new_readme, source)
+            # 9. Commit 3-4 times to main, push once (streak!)
+            result = git_commit_and_push(local_path, name, current_readme, new_readme, source)
 
-        if result["success"]:
-            commits = result["commits"]
-            log.info(f"✅ Done! {len(commits)} commits pushed for '{name}'")
-            mark_maintained(pid)
-            log_run(pid, "success", source, json.dumps(commits))
-        else:
-            log.error(f"❌ Git failed: {result['error']}")
-            log_run(pid, "failed", result["error"], "[]")
+            if result["success"]:
+                commits = result["commits"]
+                log.info(f"✅ STREAK SAVED! {len(commits)} commits pushed for '{name}'")
+                mark_maintained(pid)
+                log_run(pid, "success", source, json.dumps(commits))
+                success_today = True
+                break
+            else:
+                log.error(f"❌ Git push failed for '{name}': {result['error']}. Trying next project...")
+                mark_maintained(pid)
+                continue
 
-    finally:
-        # Clean up temp clone — only README was modified inside it
-        if temp_dir and os.path.isdir(temp_dir):
-            shutil.rmtree(temp_dir, ignore_errors=True)
+        finally:
+            if temp_dir and os.path.isdir(temp_dir):
+                shutil.rmtree(temp_dir, ignore_errors=True)
+
+    if not success_today:
+        log.error("⚠️ Could not successfully commit/push to any project today.")
 
     log.info("Bot run complete. Exiting.")
     log.info("=" * 60)
