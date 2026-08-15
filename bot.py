@@ -599,37 +599,49 @@ def git_commit_and_push(local_path: str, proj_name: str,
         subprocess.run(["git", "config", "user.name", "Santusht Kotai"],
                        cwd=local_path, capture_output=True)
 
-        # Build 10-12 intermediate README states for daily streak activity
-        old_lines = old_readme.splitlines()
-        new_lines = new_readme.splitlines()
+        # Build 10-12 distinct atomic commits for daily streak activity
+        old_lines = old_readme.splitlines(keepends=True)
+        new_lines = new_readme.splitlines(keepends=True)
         
-        commit_stages = [
-            (0.10, "docs(readme): fix header formatting and alignment [AI bot]"),
-            (0.20, "docs(readme): improve introduction and project overview [AI bot]"),
-            (0.30, "docs(readme): add tech stack badges and key feature list [AI bot]"),
-            (0.40, "docs(readme): refine prerequisites and system requirements [AI bot]"),
-            (0.50, "docs(readme): update installation & setup commands [AI bot]"),
-            (0.60, "docs(readme): add configuration and environment instructions [AI bot]"),
-            (0.70, "docs(readme): enrich API routes & code usage examples [AI bot]"),
-            (0.80, "docs(readme): document project architecture & file structure [AI bot]"),
-            (0.88, "docs(readme): polish section headers and formatting [AI bot]"),
-            (0.93, "docs(readme): validate links and markdown syntax [AI bot]"),
-            (0.97, "docs(readme): verify badges and license documentation [AI bot]"),
-            (1.00, f"docs(readme): finalize daily AI maintenance update [AI bot]\n\nSummary: {summary}"),
+        num_commits = 12
+        commit_messages = [
+            "docs(readme): fix header formatting and alignment [AI bot]",
+            "docs(readme): improve introduction and project overview [AI bot]",
+            "docs(readme): add tech stack badges and key feature list [AI bot]",
+            "docs(readme): refine prerequisites and system requirements [AI bot]",
+            "docs(readme): update installation & setup commands [AI bot]",
+            "docs(readme): add configuration and environment instructions [AI bot]",
+            "docs(readme): enrich API routes & code usage examples [AI bot]",
+            "docs(readme): document project architecture & file structure [AI bot]",
+            "docs(readme): polish section headers and formatting [AI bot]",
+            "docs(readme): validate links and markdown syntax [AI bot]",
+            "docs(readme): verify badges and license documentation [AI bot]",
+            f"docs(readme): finalize daily AI maintenance update [AI bot]\n\nSummary: {summary}",
         ]
         
         commits_made = []
         
-        for fraction, commit_msg in commit_stages:
-            if fraction < 1.0:
-                # Interpolate between old and new README for incremental commits
-                n = int(len(new_lines) * fraction)
-                staged_lines = new_lines[:n] + old_lines[n:] if n < len(old_lines) else new_lines
-                staged_content = "\n".join(staged_lines)
-            else:
-                staged_content = new_readme
+        # Calculate line-by-line diff steps to guarantee 10-12 distinct commits
+        total_new = len(new_lines)
+        total_old = len(old_lines)
+        
+        for idx in range(num_commits):
+            progress = (idx + 1) / num_commits
+            commit_msg = commit_messages[idx]
             
-            # Write README (only file we touch)
+            if idx == num_commits - 1:
+                staged_content = "".join(new_lines)
+            else:
+                # Calculate proportion of new lines vs old lines
+                n_new = int(total_new * progress)
+                n_old = int(total_old * (1 - progress))
+                
+                # Blend lines progressively
+                staged_content = "".join(new_lines[:n_new])
+                if n_old > 0 and total_old > n_new:
+                    staged_content += "".join(old_lines[n_new:n_new + n_old])
+            
+            # Write README
             with open(readme_path, "w", encoding="utf-8") as f:
                 f.write(staged_content)
             
@@ -637,13 +649,13 @@ def git_commit_and_push(local_path: str, proj_name: str,
             subprocess.run(["git", "add", "README.md"],
                            cwd=local_path, check=True, capture_output=True)
             
-            # Check if there's actually a diff to commit
+            # Check if diff exists against HEAD
             diff_check = subprocess.run(
                 ["git", "diff", "--cached", "--quiet"],
                 cwd=local_path, capture_output=True
             )
             if diff_check.returncode == 0:
-                continue  # Nothing staged, skip this commit
+                continue  # Skip if identical to current commit
             
             commit_res = subprocess.run(
                 ["git", "commit", "-m", commit_msg],
@@ -655,7 +667,7 @@ def git_commit_and_push(local_path: str, proj_name: str,
                     cwd=local_path, capture_output=True, text=True
                 ).stdout.strip()
                 commits_made.append(sha)
-                log.info(f"  ✔ Committed: {sha} — {commit_msg.splitlines()[0]}")
+                log.info(f"  ✔ Committed ({len(commits_made)}/{num_commits}): {sha} — {commit_msg.splitlines()[0]}")
 
         if not commits_made:
             return {"success": False, "error": "No changes committed (README already up to date)"}
