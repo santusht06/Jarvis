@@ -249,40 +249,118 @@ def find_readme(folder: str) -> Optional[str]:
             return p
     return None
 
+# ─── Secret & Confidential Data Sanitizer ──────────────────────────────────────
+SECRET_PATTERNS = [
+    r"gsk_[a-zA-Z0-9_]{32,}",                           # Groq key
+    r"sk-[a-zA-Z0-9_]{32,}",                            # OpenAI key
+    r"ghp_[a-zA-Z0-9]{36}",                             # GitHub personal access token
+    r"gho_[a-zA-Z0-9]{36}",                             # GitHub OAuth token
+    r"github_pat_[a-zA-Z0-9_]{82}",                     # GitHub PAT
+    r"AKIA[0-9A-Z]{16}",                                # AWS Access Key ID
+    r"AIzaSy[a-zA-Z0-9_-]{33}",                         # Google API key
+    r"-----BEGIN (?:RSA|EC|DSA|OPENSSH) PRIVATE KEY-----[\s\S]*?-----END (?:RSA|EC|DSA|OPENSSH) PRIVATE KEY-----",
+    r"(?:postgres|mongodb\+srv|redis|mysql)://[^\s'\"]+:[^\s'\"]+@[^\s'\"]+", # Connection URIs with pass
+    r"(?i)(?:api_key|secret|password|token|access_key)\s*=\s*['\"]([^'\"]{8,})['\"]", # Hardcoded secrets in code
+]
+
+def sanitize_content(text: str) -> str:
+    """Scrubs sensitive API keys, credentials, and private keys from text."""
+    if not text:
+        return text
+    sanitized = text
+    for pat in SECRET_PATTERNS:
+        sanitized = re.sub(pat, "[REDACTED_SECRET]", sanitized)
+    return sanitized
+
+def has_leaked_secrets(text: str) -> Tuple[bool, str]:
+    """Returns True if raw unredacted secret pattern is detected."""
+    for pat in SECRET_PATTERNS:
+        match = re.search(pat, text)
+        if match:
+            return True, f"Detected potential secret matching pattern: {match.group(0)[:12]}..."
+    return False, ""
+
+# ─── Deep Project Codebase Analyzer ───────────────────────────────────────────
 def read_project_context(folder: str) -> List[Dict[str, str]]:
-    """Reads manifest files as context ONLY — never modifies them."""
+    """Deeply analyzes codebase: manifests, entry points, source files, routes, configs, and file tree."""
     docs = []
-    for fname in ["package.json", "requirements.txt", "pyproject.toml",
-                  "Cargo.toml", "go.mod", "setup.py"]:
+    if not os.path.isdir(folder):
+        return docs
+
+    # 1. Package & Environment Manifests
+    manifest_files = [
+        "package.json", "requirements.txt", "pyproject.toml",
+        "Cargo.toml", "go.mod", "setup.py", "Makefile",
+        "Dockerfile", "docker-compose.yml", ".env.example"
+    ]
+    for fname in manifest_files:
         fp = os.path.join(folder, fname)
         if os.path.isfile(fp):
             try:
                 with open(fp, "r", encoding="utf-8", errors="ignore") as f:
-                    docs.append({"content": f.read()[:1500]})
+                    content = sanitize_content(f.read()[:2000])
+                    docs.append({"content": f"[{fname}]\n{content}"})
             except Exception:
                 pass
-    # File tree for context
+
+    # 2. Key Code Source Files & Entry Points (Deep Source Analysis)
+    source_exts = (".py", ".ts", ".js", ".go", ".rs", ".java", ".c", ".cpp", ".sql", ".sh")
+    priority_files = ["main.py", "app.py", "server.py", "index.ts", "index.js", "server.js", "main.go", "lib.rs"]
+    
+    analyzed_count = 0
+    for root, dirs, files in os.walk(folder):
+        dirs[:] = [d for d in dirs if not d.startswith(".")
+                   and d not in ("node_modules", "venv", ".venv", "dist", "build", "target", "vendor")]
+        rel = os.path.relpath(root, folder)
+        
+        for f in files:
+            if analyzed_count >= 15:
+                break
+            fp = os.path.join(root, f)
+            rel_path = os.path.join("" if rel == "." else rel, f)
+            
+            is_priority = f in priority_files
+            is_source   = f.endswith(source_exts) and not f.startswith(".")
+            
+            if (is_priority or is_source) and os.path.getsize(fp) < 100000:
+                try:
+                    with open(fp, "r", encoding="utf-8", errors="ignore") as sf:
+                        content = sf.read()
+                        # Extract first 1500 chars (imports, main functions, routes)
+                        content_sample = sanitize_content(content[:1500])
+                        docs.append({"content": f"[File: {rel_path}]\n{content_sample}"})
+                        analyzed_count += 1
+                except Exception:
+                    pass
+
+    # 3. Complete File Tree structure
     try:
         tree = []
         for root, dirs, files in os.walk(folder):
             dirs[:] = [d for d in dirs if not d.startswith(".")
-                       and d not in ("node_modules", "venv", ".venv", "dist", "build")]
+                       and d not in ("node_modules", "venv", ".venv", "dist", "build", "target", "vendor")]
             rel = os.path.relpath(root, folder)
             for f in files:
                 tree.append(os.path.join("" if rel == "." else rel, f))
-            if len(tree) > 100:
+            if len(tree) > 150:
                 break
         if tree:
-            docs.append({"content": "Project files:\n" + "\n".join(tree[:100])})
+            docs.append({"content": "Project Architecture & File Tree:\n" + "\n".join(tree[:150])})
     except Exception:
         pass
+
     return docs
 
 # ─── Safety Guardrails ─────────────────────────────────────────────────────────
 def validate_patch(old: str, new: str) -> Tuple[bool, str]:
-    """Strict safety checks — ensures patch is surgical, not destructive."""
+    """Strict safety checks — ensures patch is surgical, non-destructive, and secret-free."""
     if not new.strip():
         return False, "New content is empty."
+
+    # Zero Confidential Data Leakage Guardrail
+    leaked, secret_msg = has_leaked_secrets(new)
+    if leaked:
+        return False, f"SECURITY ALERT: {secret_msg}"
 
     old_lines = old.splitlines()
     new_lines  = new.splitlines()
