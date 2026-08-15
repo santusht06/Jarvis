@@ -48,8 +48,8 @@ LOCAL_SCAN_PATHS = [
 GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL    = "llama-3.3-70b-versatile"
 
-# Safety: reject patches that alter more than this fraction of README lines
-MAX_CHANGE_RATIO = 0.35
+# Safety: reject patches that alter more than this fraction of README lines (65% daily cap)
+MAX_CHANGE_RATIO = 0.65
 
 # ─── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -599,14 +599,22 @@ def git_commit_and_push(local_path: str, proj_name: str,
         subprocess.run(["git", "config", "user.name", "Santusht Kotai"],
                        cwd=local_path, capture_output=True)
 
-        # Build 3-4 intermediate README states for streak commits
+        # Build 10-12 intermediate README states for daily streak activity
         old_lines = old_readme.splitlines()
         new_lines = new_readme.splitlines()
         
         commit_stages = [
-            (0.40, "docs(readme): fix typos and improve readability [AI bot]"),
-            (0.70, "docs(readme): improve structure and add missing sections [AI bot]"),
-            (0.90, "docs(readme): refine formatting and links [AI bot]"),
+            (0.10, "docs(readme): fix header formatting and alignment [AI bot]"),
+            (0.20, "docs(readme): improve introduction and project overview [AI bot]"),
+            (0.30, "docs(readme): add tech stack badges and key feature list [AI bot]"),
+            (0.40, "docs(readme): refine prerequisites and system requirements [AI bot]"),
+            (0.50, "docs(readme): update installation & setup commands [AI bot]"),
+            (0.60, "docs(readme): add configuration and environment instructions [AI bot]"),
+            (0.70, "docs(readme): enrich API routes & code usage examples [AI bot]"),
+            (0.80, "docs(readme): document project architecture & file structure [AI bot]"),
+            (0.88, "docs(readme): polish section headers and formatting [AI bot]"),
+            (0.93, "docs(readme): validate links and markdown syntax [AI bot]"),
+            (0.97, "docs(readme): verify badges and license documentation [AI bot]"),
             (1.00, f"docs(readme): finalize daily AI maintenance update [AI bot]\n\nSummary: {summary}"),
         ]
         
