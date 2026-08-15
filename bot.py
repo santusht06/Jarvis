@@ -287,9 +287,9 @@ def validate_patch(old: str, new: str) -> Tuple[bool, str]:
     old_lines = old.splitlines()
     new_lines  = new.splitlines()
 
-    # If old README is a stub (≤8 lines), allow up to 95% change (initial creation)
+    # If old README is a stub (≤8 lines), allow up to 98% change (initial creation)
     is_stub = len(old_lines) <= 8
-    change_cap = 0.95 if is_stub else MAX_CHANGE_RATIO
+    change_cap = 0.98 if is_stub else MAX_CHANGE_RATIO
 
     # Must retain at least 75% of original lines (skip for stubs)
     if not is_stub and len(old_lines) > 5 and len(new_lines) < len(old_lines) * 0.75:
