@@ -181,7 +181,7 @@ def call_groq_doc(repo_name: str, doc_filename: str, doc_content: str, issue_con
     if not GROQ_API_KEY:
         return None
 
-    time.sleep(1.5)  # Rate limit protection
+    time.sleep(3.0)  # Rate limit protection (Groq free tier)
 
     user_msg = (
         f"Repository: {repo_name}\n"

@@ -497,7 +497,7 @@ YOUR STRICT RULES:
 def call_groq(proj_name: str, readme: str, context: str) -> Optional[str]:
     if not GROQ_API_KEY:
         return None
-    time.sleep(1.5)  # Rate limit protection
+    time.sleep(3.0)  # Rate limit protection (Groq free tier)
     try:
         resp = httpx.post(
             GROQ_ENDPOINT,
