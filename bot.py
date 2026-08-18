@@ -189,6 +189,20 @@ class VectorStore:
 vector_store = VectorStore()
 
 # ─── Project Discovery ─────────────────────────────────────────────────────────
+def is_forked_repo(path_or_url: str) -> bool:
+    """Checks if a repository is a fork (returns True if it is a fork)."""
+    try:
+        res = subprocess.run(
+            ["gh", "repo", "view", path_or_url, "--json", "isFork"],
+            capture_output=True, text=True, timeout=10
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            data = json.loads(res.stdout)
+            return data.get("isFork", False)
+    except Exception:
+        pass
+    return False
+
 def scan_local() -> List[Dict]:
     seen, projects = set(), []
     for base in LOCAL_SCAN_PATHS:
@@ -207,6 +221,10 @@ def scan_local() -> List[Dict]:
                                        "pyproject.toml", "Cargo.toml",
                                        "go.mod", "Makefile", "README.md"])
             if is_git or has_marker:
+                # Strictly check if local git repo is a fork
+                if is_git and is_forked_repo(path):
+                    log.info(f"Skipping local repo '{entry}' — it is a FORK.")
+                    continue
                 pid = "local-" + hashlib.md5(path.encode()).hexdigest()[:12]
                 projects.append({"id": pid, "name": entry, "type": "local", "path": path})
     return projects
@@ -214,13 +232,16 @@ def scan_local() -> List[Dict]:
 def scan_github() -> List[Dict]:
     projects = []
     try:
+        # Use --source flag to strictly list ONLY personal owned source repos (no forks)
         res = subprocess.run(
-            ["gh", "repo", "list", "--limit", "100",
-             "--json", "name,nameWithOwner,url"],
+            ["gh", "repo", "list", "--source", "--limit", "100",
+             "--json", "name,nameWithOwner,url,isFork"],
             capture_output=True, text=True, timeout=15
         )
         if res.returncode == 0 and res.stdout.strip():
             for repo in json.loads(res.stdout):
+                if repo.get("isFork", False):
+                    continue  # Strict safety check: skip forks
                 nwo = repo.get("nameWithOwner") or repo["name"]
                 pid = "github-" + hashlib.md5(nwo.encode()).hexdigest()[:12]
                 https_url = repo.get("url", "")
@@ -741,6 +762,12 @@ def run():
         path     = target["path_or_url"]
 
         log.info(f"Selected candidate: [{ptype.upper()}] {name} ({pid})")
+
+        # Double safety check: Strictly skip if repository is a fork
+        if is_forked_repo(path if ptype == "github" else name):
+            log.warning(f"STRICT SAFETY: Skipping '{name}' because it is a FORKED repository.")
+            mark_maintained(pid)
+            continue
 
         # 4. Resolve local path — clone GitHub repos temporarily if needed
         local_path = path
