@@ -623,44 +623,17 @@ def git_commit_and_push(local_path: str, proj_name: str,
         subprocess.run(["git", "config", "user.name", "Santusht Kotai"],
                        cwd=local_path, capture_output=True)
 
-        # Generate 29 to 31 distinct atomic commits per daily run for high contribution activity
+        # Generate 2 to 4 distinct atomic commits per daily run for personal repositories
         old_lines = old_readme.splitlines(keepends=True)
         new_lines = new_readme.splitlines(keepends=True)
         
-        num_commits = random.randint(29, 31)
+        num_commits = random.randint(2, 4)
         
         base_messages = [
-            "docs(readme): fix header formatting and title alignment",
-            "docs(readme): improve project overview and core description",
-            "docs(readme): add tech stack badges and shields",
-            "docs(readme): refine prerequisites and system dependencies",
-            "docs(readme): update package installation commands",
-            "docs(readme): update setup and build instructions",
-            "docs(readme): add environment variable configuration guide",
-            "docs(readme): enrich API endpoints and route documentation",
-            "docs(readme): add code usage examples and code blocks",
-            "docs(readme): document project directory structure",
-            "docs(readme): update architecture diagram references",
-            "docs(readme): refine database setup and migration steps",
-            "docs(readme): format code snippets and syntax highlighting",
-            "docs(readme): add testing and build execution commands",
-            "docs(readme): clarify authentication and security flow",
-            "docs(readme): update docker and container deployment guide",
-            "docs(readme): refine section spacing and typography",
-            "docs(readme): fix relative file links and navigation",
-            "docs(readme): update contributing guidelines and workflow",
-            "docs(readme): format error handling and logging docs",
-            "docs(readme): add performance optimization notes",
-            "docs(readme): verify badges and status indicators",
-            "docs(readme): polish table formatting and alignment",
-            "docs(readme): update troubleshooting and FAQ section",
-            "docs(readme): refine markdown list bullets and sub-items",
-            "docs(readme): validate external references and URLs",
-            "docs(readme): update license and copyright notice",
-            "docs(readme): perform final documentation review",
-            "docs(readme): apply typography and link validation fixes",
+            "docs(readme): fix typos and section formatting",
+            "docs(readme): update setup instructions and prerequisites",
+            "docs(readme): refine structure and API documentation",
             "docs(readme): finalize daily maintenance update",
-            "docs(readme): complete documentation verification",
         ]
         
         commit_messages = base_messages[:num_commits]
