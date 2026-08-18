@@ -615,8 +615,8 @@ def git_commit_and_push(local_path: str, proj_name: str,
             # Try switching to main
             subprocess.run(["git", "checkout", "main"], cwd=local_path, capture_output=True)
 
-        # Configure git user if not set (for CI/bot/systemd environments)
-        subprocess.run(["git", "config", "user.email", "santushtkotai1221@gmail.com"],
+        # Configure git user to GitHub official noreply email for 100% guaranteed profile attribution
+        subprocess.run(["git", "config", "user.email", "115890693+santusht06@users.noreply.github.com"],
                        cwd=local_path, capture_output=True)
         subprocess.run(["git", "config", "user.name", "Santusht Kotai"],
                        cwd=local_path, capture_output=True)

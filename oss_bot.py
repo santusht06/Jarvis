@@ -311,8 +311,8 @@ def git_commit_and_push_docs(local_path: str, rel_doc_path: str,
         if current_branch not in ("main", "master"):
             subprocess.run(["git", "checkout", "main"], cwd=local_path, capture_output=True)
 
-        # Configure git committer
-        subprocess.run(["git", "config", "user.email", "santushtkotai1221@gmail.com"], cwd=local_path, capture_output=True)
+        # Configure git committer to GitHub official noreply email for 100% guaranteed profile attribution
+        subprocess.run(["git", "config", "user.email", "115890693+santusht06@users.noreply.github.com"], cwd=local_path, capture_output=True)
         subprocess.run(["git", "config", "user.name", "Santusht Kotai"], cwd=local_path, capture_output=True)
 
         old_lines = old_content.splitlines(keepends=True)
