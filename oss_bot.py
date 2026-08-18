@@ -315,40 +315,24 @@ def git_commit_and_push_docs(local_path: str, rel_doc_path: str,
         subprocess.run(["git", "config", "user.email", "115890693+santusht06@users.noreply.github.com"], cwd=local_path, capture_output=True)
         subprocess.run(["git", "config", "user.name", "Santusht Kotai"], cwd=local_path, capture_output=True)
 
-        old_lines = old_content.splitlines(keepends=True)
-        new_lines = new_content.splitlines(keepends=True)
+        # Write final updated documentation content (EXACTLY 1 COMMIT ONLY for forked repos)
+        with open(abs_doc_path, "w", encoding="utf-8") as f:
+            f.write(new_content)
 
-        num_stages = min(4, max(2, len(new_lines) // 15))
-        commits_made = []
+        # Add ONLY the documentation file (never touch code)
+        subprocess.run(["git", "add", rel_doc_path], cwd=local_path, check=True, capture_output=True)
 
-        for i in range(num_stages):
-            progress = (i + 1) / num_stages
-            msg = PROFESSIONAL_COMMIT_MESSAGES[i % len(PROFESSIONAL_COMMIT_MESSAGES)]
-
-            if i == num_stages - 1:
-                staged = "".join(new_lines)
-            else:
-                n_new = int(len(new_lines) * progress)
-                staged = "".join(new_lines[:n_new])
-
-            with open(abs_doc_path, "w", encoding="utf-8") as f:
-                f.write(staged)
-
-            # Add ONLY the documentation file (never touch code)
-            subprocess.run(["git", "add", rel_doc_path], cwd=local_path, check=True, capture_output=True)
-
-            diff_check = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=local_path, capture_output=True)
-            if diff_check.returncode == 0:
-                continue
-
-            res = subprocess.run(["git", "commit", "-m", msg], cwd=local_path, capture_output=True, text=True)
-            if res.returncode == 0:
-                sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=local_path, capture_output=True, text=True).stdout.strip()
-                commits_made.append(sha)
-                log.info(f"  ✔ Committed ({sha}): {msg}")
-
-        if not commits_made:
+        diff_check = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=local_path, capture_output=True)
+        if diff_check.returncode == 0:
             return {"success": False, "error": "No documentation changes staged"}
+
+        msg = "docs: update documentation and setup guide"
+        commits_made = []
+        res = subprocess.run(["git", "commit", "-m", msg], cwd=local_path, capture_output=True, text=True)
+        if res.returncode == 0:
+            sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=local_path, capture_output=True, text=True).stdout.strip()
+            commits_made.append(sha)
+            log.info(f"  ✔ Committed (1/1 forked repo): {sha} — {msg}")
 
         # Push using authenticated HTTPS
         remote_res = subprocess.run(["git", "remote", "get-url", "origin"], cwd=local_path, capture_output=True, text=True)
