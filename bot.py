@@ -13,6 +13,8 @@ Runs ONCE per day (scheduled via launchd/cron).
 
 import os
 import sys
+import time
+import random
 import json
 import sqlite3
 import hashlib
