@@ -46,7 +46,7 @@ LOCAL_SCAN_PATHS = [
 
 # Groq settings
 GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL    = "llama-3.3-70b-versatile"
+GROQ_MODEL    = "groq/compound-mini"
 
 # Safety: reject patches that alter more than this fraction of README lines (65% daily cap)
 MAX_CHANGE_RATIO = 0.65
@@ -497,6 +497,7 @@ YOUR STRICT RULES:
 def call_groq(proj_name: str, readme: str, context: str) -> Optional[str]:
     if not GROQ_API_KEY:
         return None
+    time.sleep(1.5)  # Rate limit protection
     try:
         resp = httpx.post(
             GROQ_ENDPOINT,
