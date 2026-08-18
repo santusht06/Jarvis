@@ -88,6 +88,35 @@ def init_db():
         );
         """)
 
+def is_maintained_within_last_7_days(repo_nwo: str) -> bool:
+    """Returns True if the repository was maintained within the last 7 days."""
+    pid = hashlib.md5(repo_nwo.encode()).hexdigest()[:12]
+    with sqlite3.connect(DB_PATH) as c:
+        row = c.execute("SELECT last_maintained FROM oss_projects WHERE id=?", (pid,)).fetchone()
+        if row and row[0]:
+            try:
+                last = datetime.fromisoformat(row[0])
+                delta = datetime.now(timezone.utc) - last
+                return delta.total_seconds() < (7 * 24 * 3600)  # 7 days cooldown
+            except Exception:
+                pass
+    return False
+
+def discover_forked_repos() -> List[str]:
+    """Discovers all forked open-source repositories owned on GitHub."""
+    forks = []
+    try:
+        res = subprocess.run(
+            ["gh", "repo", "list", "--fork", "--limit", "100", "--json", "nameWithOwner"],
+            capture_output=True, text=True, timeout=15
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            for repo in json.loads(res.stdout):
+                forks.append(repo["nameWithOwner"])
+    except Exception as e:
+        log.warning(f"Could not discover forked repos: {e}")
+    return forks
+
 def get_maintained_projects() -> List[str]:
     with sqlite3.connect(DB_PATH) as c:
         rows = c.execute("SELECT repo_nwo FROM oss_projects ORDER BY last_maintained ASC").fetchall()
@@ -348,19 +377,21 @@ def run_oss_contributor(target_repos: Optional[List[str]] = None):
 
     init_db()
 
-    # Default list of personal open source projects to maintain
+    # Auto-discover forked open-source repositories if target_repos is not specified
     if not target_repos:
-        target_repos = [
-            "santusht06/NextRole",
-            "santusht06/ORBIT",
-            "santusht06/ORBIT_AI",
-            "santusht06/my-Portfolio",
-            "santusht06/shopground-era",
-            "santusht06/TCP_SOCKET",
-            "santusht06/airdrop.sharexpress.in",
-        ]
+        target_repos = discover_forked_repos()
+        log.info(f"Discovered {len(target_repos)} forked open-source repositories.")
+
+    if not target_repos:
+        log.warning("No forked open-source repositories found.")
+        return
 
     for repo_nwo in target_repos:
+        # Enforce ONCE A WEEK cooldown per forked repo
+        if is_maintained_within_last_7_days(repo_nwo):
+            log.info(f"Skipping '{repo_nwo}' — already maintained within the last 7 days (Weekly Cap).")
+            continue
+
         log.info(f"Targeting repository: {repo_nwo}")
 
         temp_dir = tempfile.mkdtemp(prefix="oss_doc_")
@@ -381,7 +412,9 @@ def run_oss_contributor(target_repos: Optional[List[str]] = None):
             issue_context = ""
             if issues:
                 issue_context = f"Issue #{issues[0]['number']}: {issues[0]['title']}\n{issues[0]['body']}"
-                log.info(f"Found open doc issue: {issues[0]['title']}")
+                log.info(f"Found open doc issue: #{issues[0]['number']} {issues[0]['title']}")
+            else:
+                log.info("No open doc issues found — performing direct AI documentation optimization.")
 
             # Find documentation files ONLY (*.md)
             doc_files = find_doc_files(temp_dir)
