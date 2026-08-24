@@ -1,16 +1,3 @@
-#!/usr/bin/env python3
-"""
-AI README Maintenance Bot
---------------------------
-Runs ONCE per day (scheduled via launchd/cron).
-- Picks ONE project (oldest unmaintained)
-- Reads README.md only — touches NOTHING else
-- Calls Groq AI to generate improvements
-- Makes 3-4 small atomic commits directly to main
-- Pushes to GitHub to maintain streak
-- Exits. Done.
-"""
-
 import os
 import sys
 import time
