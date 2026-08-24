@@ -144,13 +144,13 @@ def log_run(repo_nwo: str, status: str, summary: str, commits_json: str):
 # ─── Secret & Confidentiality Protection ───────────────────────────────────────
 SECRET_PATTERNS = [
     r"gsk_[a-zA-Z0-9_]{32,}",
-    r"sk-[a-zA-Z0-9_]{32,}",
+    r"sk-[a-zA-Z0-9_-]{32,}",
     r"ghp_[a-zA-Z0-9]{36}",
     r"gho_[a-zA-Z0-9]{36}",
     r"github_pat_[a-zA-Z0-9_]{82}",
     r"AKIA[0-9A-Z]{16}",
     r"AIzaSy[a-zA-Z0-9_-]{33}",
-    r"-----BEGIN (?:RSA|EC|DSA|OPENSSH) PRIVATE KEY-----[\s\S]*?-----END (?:RSA|EC|DSA|OPENSSH) PRIVATE KEY-----",
+    r"-----BEGIN (?:RSA|EC|DSA|OPENSSH|PRIVATE) KEY-----[\s\S]*?-----END (?:RSA|EC|DSA|OPENSSH|PRIVATE) KEY-----",
     r"(?:postgres|mongodb\+srv|redis|mysql)://[^\s'\"]+:[^\s'\"]+@[^\s'\"]+",
     r"(?i)(?:api_key|secret|password|token|access_key)\s*=\s*['\"]([^'\"]{8,})['\"]",
 ]

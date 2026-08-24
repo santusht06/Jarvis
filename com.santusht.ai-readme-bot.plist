@@ -7,12 +7,12 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/santushtkotai/Desktop/bot/venv/bin/python</string>
-        <string>/Users/santushtkotai/Desktop/bot/bot.py</string>
+        <string>/Users/santushtkotai/Desktop/Jarvis/venv/bin/python</string>
+        <string>/Users/santushtkotai/Desktop/Jarvis/brain.py</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/santushtkotai/Desktop/bot</string>
+    <string>/Users/santushtkotai/Desktop/Jarvis</string>
 
     <!-- Auto-start on login -->
     <key>RunAtLoad</key>
@@ -24,9 +24,9 @@
 
     <!-- Redirect logs -->
     <key>StandardOutPath</key>
-    <string>/Users/santushtkotai/Desktop/bot/data/bot.log</string>
+    <string>/Users/santushtkotai/Desktop/Jarvis/data/bot.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/santushtkotai/Desktop/bot/data/bot_error.log</string>
+    <string>/Users/santushtkotai/Desktop/Jarvis/data/bot_error.log</string>
 </dict>
 </plist>

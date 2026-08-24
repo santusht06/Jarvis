@@ -53,7 +53,7 @@ Copy `.env.example` to `.env` and fill in the values you need.
 ## ▶️ Run manually
 
 ```bash
-./venv/bin/python bot.py
+./venv/bin/python brain.py
 ```
 
 ## ⏰ Auto‑start on macOS login (LaunchAgent)
@@ -83,7 +83,7 @@ tail -f data/bot.log
 
 ```
 bot/
-├── bot.py                          # Main autonomous daemon
+├── brain.py                          # Main autonomous daemon
 ├── run.sh                          # Simple shell launcher
 ├── com.santusht.ai-readme-bot.plist  # macOS LaunchAgent
 ├── requirements.txt

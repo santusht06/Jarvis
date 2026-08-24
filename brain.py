@@ -262,13 +262,13 @@ def find_readme(folder: str) -> Optional[str]:
 # ─── Secret & Confidential Data Sanitizer ──────────────────────────────────────
 SECRET_PATTERNS = [
     r"gsk_[a-zA-Z0-9_]{32,}",                           # Groq key
-    r"sk-[a-zA-Z0-9_]{32,}",                            # OpenAI key
+    r"sk-[a-zA-Z0-9_-]{32,}",                            # OpenAI key
     r"ghp_[a-zA-Z0-9]{36}",                             # GitHub personal access token
     r"gho_[a-zA-Z0-9]{36}",                             # GitHub OAuth token
     r"github_pat_[a-zA-Z0-9_]{82}",                     # GitHub PAT
     r"AKIA[0-9A-Z]{16}",                                # AWS Access Key ID
     r"AIzaSy[a-zA-Z0-9_-]{33}",                         # Google API key
-    r"-----BEGIN (?:RSA|EC|DSA|OPENSSH) PRIVATE KEY-----[\s\S]*?-----END (?:RSA|EC|DSA|OPENSSH) PRIVATE KEY-----",
+    r"-----BEGIN (?:RSA|EC|DSA|OPENSSH|PRIVATE) KEY-----[\s\S]*?-----END (?:RSA|EC|DSA|OPENSSH|PRIVATE) KEY-----",
     r"(?:postgres|mongodb\+srv|redis|mysql)://[^\s'\"]+:[^\s'\"]+@[^\s'\"]+", # Connection URIs with pass
     r"(?i)(?:api_key|secret|password|token|access_key)\s*=\s*['\"]([^'\"]{8,})['\"]", # Hardcoded secrets in code
 ]
