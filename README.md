@@ -39,13 +39,24 @@ Make sure you're authenticated with GitHub CLI:
 gh auth login
 ```
 
+## ⚙️ Configuration
+
+The repository includes a `.env.example` file that documents all optional environment variables:
+
+- `GROQ_API_KEY` – **required** Groq API key.
+- `GROQ_MODEL` – Model to use (default: `llama-3.3-70b-versatile`).
+- `GITHUB_TOKEN` – Optional GitHub token if `gh auth login` is not already active.
+- `OPENAI_API_KEY`, `GEMINI_API_KEY`, `OLLAMA_BASE_URL` – Optional alternative LLM providers.
+
+Copy `.env.example` to `.env` and fill in the values you need.
+
 ## ▶️ Run manually
 
 ```bash
 ./venv/bin/python bot.py
 ```
 
-## ⏰ Auto-start on macOS login (LaunchAgent)
+## ⏰ Auto‑start on macOS login (LaunchAgent)
 
 ```bash
 cp com.santusht.ai-readme-bot.plist ~/Library/LaunchAgents/
@@ -55,17 +66,6 @@ launchctl load ~/Library/LaunchAgents/com.santusht.ai-readme-bot.plist
 The bot will run automatically every day at midnight.
 
 ## 📋 View logs
-
-```bash
-tail -f data/bot.log
-```
-
-## 🛡️ Safety Guardrails
-
-- **README.md only** — no other files touched
-- **≤35% line change cap** per day
-- Rejects patches that remove the primary `# Title`
-- Rejects unclosed code fences
 - **1 project per day** enforced via SQLite
 
 ## 🗂️ Project Structure
