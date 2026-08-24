@@ -66,6 +66,17 @@ launchctl load ~/Library/LaunchAgents/com.santusht.ai-readme-bot.plist
 The bot will run automatically every day at midnight.
 
 ## 📋 View logs
+
+```bash
+tail -f data/bot.log
+```
+
+## 🛡️ Safety Guardrails
+
+- **README.md only** — no other files touched
+- **≤35% line change cap** per day
+- Rejects patches that remove the primary `# Title`
+- Rejects unclosed code fences
 - **1 project per day** enforced via SQLite
 
 ## 🗂️ Project Structure
