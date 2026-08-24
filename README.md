@@ -11,7 +11,7 @@ An autonomous AI agent that automatically improves your project README files dai
 Runs **once per day** automatically (via macOS LaunchAgent). On each run it:
 
 1. Scans all **local desktop repos** + **GitHub repositories** (via `gh` CLI)
-2. Picks the **oldest unmaintained project** (round-robin)
+2. Picks the **oldest unmaintained project** (round‑robin)
 3. Reads only `README.md` — touches nothing else
 4. Calls **Groq AI** (`llama-3.3-70b-versatile`) for surgical README improvements
 5. Validates the patch with safety guardrails (≤35% change cap, no broken fences, title preserved)
