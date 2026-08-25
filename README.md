@@ -56,6 +56,16 @@ Copy `.env.example` to `.env` and fill in the values you need.
 ./venv/bin/python brain.py
 ```
 
+## 🌐 API (optional)
+
+If you prefer to run the bot as a web service, start the FastAPI server:
+
+```bash
+uvicorn brain:app --host 0.0.0.0 --port 8000
+```
+
+The API exposes endpoints for triggering a manual run and inspecting status. See `brain.py` for details.
+
 ## ⏰ Auto‑start on macOS login (LaunchAgent)
 
 ```bash
@@ -84,14 +94,14 @@ tail -f data/bot.log
 ```
 bot/
 ├── brain.py                          # Main autonomous daemon
-├── run.sh                          # Simple shell launcher
+├── run.sh                            # Simple shell launcher
 ├── com.santusht.ai-readme-bot.plist  # macOS LaunchAgent
 ├── requirements.txt
-├── .env                            # Your Groq API key (not committed)
+├── .env                              # Your Groq API key (not committed)
 └── data/
-    ├── bot.db                      # SQLite: project inventory + run history
-    ├── vectors.json                # Offline vector embeddings
-    └── bot.log                     # Daily run logs
+    ├── bot.db                        # SQLite: project inventory + run history
+    ├── vectors.json                  # Offline vector embeddings
+    └── bot.log                       # Daily run logs
 ```
 
 ## 📦 Requirements
