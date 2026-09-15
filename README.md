@@ -18,7 +18,7 @@ Runs **once per day** automatically (via macOS LaunchAgent). On each run it:
 6. Makes **3–4 atomic commits** directly to `main` — for GitHub streak activity
 7. Pushes, exits. Done.
 
-## 🚀 Setup
+## 🚀 Installation
 
 ```bash
 git clone https://github.com/santusht06/bot.git
@@ -27,7 +27,7 @@ python3 -m venv venv
 ./venv/bin/pip install -r requirements.txt
 ```
 
-Create a `.env` file:
+Create a `.env` file (or copy the example) and add your Groq API key:
 
 ```env
 GROQ_API_KEY=gsk_your_key_here
