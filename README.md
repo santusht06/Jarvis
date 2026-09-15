@@ -102,6 +102,32 @@ launchctl load ~/Library/LaunchAgents/com.santusht.ai-readme-bot.plist
 The bot will run automatically every day at midnight.
 
 ## 📋 View logs
+
+```bash
+tail -f data/bot.log
+```
+
+## 🛡️ Safety Guardrails
+
+- **README.md only** — no other files touched
+- **≤35% line change cap** per day
+- Rejects patches that remove the primary `# Title`
+- Rejects unclosed code fences
+- **1 project per day** enforced via SQLite
+
+## 🗂️ Project Structure
+
+```
+bot/
+├── brain.py                          # Main autonomous daemon
+├── run.sh                            # Simple shell launcher
+├── com.santusht.ai-readme-bot.plist  # macOS LaunchAgent
+├── requirements.txt
+├── .env                              # Your Groq API key (not committed)
+└── data/
+    ├── bot.db                        # SQLite: project inventory + run history
+    ├── vectors.json                  # Offline vector embeddings
+    └── bot.log                       # Daily run logs
 ```
 
 ## 📦 Requirements
@@ -110,3 +136,4 @@ The bot will run automatically every day at midnight.
 - `gh` CLI (authenticated)
 - `git`
 - Groq API key (free tier works)
+- Optional: FastAPI (required only for API mode)
