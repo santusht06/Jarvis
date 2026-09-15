@@ -33,6 +33,21 @@ Create a `.env` file (or copy the example) and add your Groq API key:
 GROQ_API_KEY=gsk_your_key_here
 ```
 
+## 🚀 Setup
+
+```bash
+git clone https://github.com/santusht06/bot.git
+cd bot
+python3 -m venv venv
+./venv/bin/pip install -r requirements.txt
+```
+
+Create a `.env` file:
+
+```env
+GROQ_API_KEY=gsk_your_key_here
+```
+
 Make sure you're authenticated with GitHub CLI:
 
 ```bash
@@ -52,21 +67,6 @@ Copy `.env.example` to `.env` and fill in the values you need.
 
 ## ▶️ Run manually
 
-```bash
-./venv/bin/python brain.py
-```
-
-## 🌐 API (optional)
-
-If you prefer to run the bot as a web service, start the FastAPI server:
-
-```bash
-uvicorn brain:app --host 0.0.0.0 --port 8000
-```
-
-The API exposes endpoints for triggering a manual run and inspecting status. See `brain.py` for details.
-
-## ⏰ Auto‑start on macOS login (LaunchAgent)
 
 ```bash
 cp com.santusht.ai-readme-bot.plist ~/Library/LaunchAgents/
