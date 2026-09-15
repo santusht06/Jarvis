@@ -67,6 +67,32 @@ Copy `.env.example` to `.env` and fill in the values you need.
 
 ## ▶️ Run manually
 
+```bash
+./venv/bin/python brain.py
+```
+
+## 📦 Usage
+
+- **Manual run**: Execute the command above to trigger an immediate README improvement.
+- **API mode**: Start the FastAPI server (optional) to expose endpoints for manual triggers and status checks:
+
+  ```bash
+  uvicorn brain:app --host 0.0.0.0 --port 8000
+  ```
+
+  See `brain.py` for endpoint details.
+
+## 🌐 API (optional)
+
+If you prefer to run the bot as a web service, start the FastAPI server:
+
+```bash
+uvicorn brain:app --host 0.0.0.0 --port 8000
+```
+
+The API exposes endpoints for triggering a manual run and inspecting status. See `brain.py` for details.
+
+## ⏰ Auto‑start on macOS login (LaunchAgent)
 
 ```bash
 cp com.santusht.ai-readme-bot.plist ~/Library/LaunchAgents/
@@ -76,32 +102,6 @@ launchctl load ~/Library/LaunchAgents/com.santusht.ai-readme-bot.plist
 The bot will run automatically every day at midnight.
 
 ## 📋 View logs
-
-```bash
-tail -f data/bot.log
-```
-
-## 🛡️ Safety Guardrails
-
-- **README.md only** — no other files touched
-- **≤35% line change cap** per day
-- Rejects patches that remove the primary `# Title`
-- Rejects unclosed code fences
-- **1 project per day** enforced via SQLite
-
-## 🗂️ Project Structure
-
-```
-bot/
-├── brain.py                          # Main autonomous daemon
-├── run.sh                            # Simple shell launcher
-├── com.santusht.ai-readme-bot.plist  # macOS LaunchAgent
-├── requirements.txt
-├── .env                              # Your Groq API key (not committed)
-└── data/
-    ├── bot.db                        # SQLite: project inventory + run history
-    ├── vectors.json                  # Offline vector embeddings
-    └── bot.log                       # Daily run logs
 ```
 
 ## 📦 Requirements
