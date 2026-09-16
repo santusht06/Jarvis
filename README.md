@@ -10,12 +10,12 @@ An autonomous AI agent that automatically improves your project README files dai
 
 Runs **once per day** automatically (via macOS LaunchAgent). On each run it:
 
-1. Scans all **local desktop repos** + **GitHub repositories** (via `gh` CLI)
-2. Picks the **oldest unmaintained project** (round‑robin)
-3. Reads only `README.md` — touches nothing else
-4. Calls **Groq AI** (`llama-3.3-70b-versatile`) for surgical README improvements
-5. Validates the patch with safety guardrails (≤35% change cap, no broken fences, title preserved)
-6. Makes **3–4 atomic commits** directly to `main` — for GitHub streak activity
+1. Scans all **local desktop repos** + **GitHub repositories** (via `gh` CLI)  
+2. Picks the **oldest unmaintained project** (round‑robin)  
+3. Reads only `README.md` — touches nothing else  
+4. Calls **Groq AI** (`llama-3.3-70b-versatile`) for surgical README improvements  
+5. Validates the patch with safety guardrails (≤35% change cap, no broken fences, title preserved)  
+6. Makes **3–4 atomic commits** directly to `main` — for GitHub streak activity  
 7. Pushes, exits. Done.
 
 ## 🚀 Installation
@@ -33,12 +33,12 @@ Create a `.env` file (or copy the example) and add your Groq API key:
 GROQ_API_KEY=gsk_your_key_here
 ```
 
-## 🚀 Setup
+## 🔐 Authentication (GitHub CLI)
 
 ```bash
-git clone https://github.com/santusht06/bot.git
-cd bot
-python3 -m venv venv
+gh auth login
+```
+
 ./venv/bin/pip install -r requirements.txt
 ```
 
@@ -131,9 +131,3 @@ bot/
 ```
 
 ## 📦 Requirements
-
-- Python 3.12+
-- `gh` CLI (authenticated)
-- `git`
-- Groq API key (free tier works)
-- Optional: FastAPI (required only for API mode)
