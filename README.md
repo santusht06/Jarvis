@@ -80,21 +80,6 @@ The API exposes endpoints for triggering a manual run and inspecting status. See
 ## ⏰ Auto‑start on macOS login (LaunchAgent)
 
 ```bash
-  See `brain.py` for endpoint details.
-
-## 🌐 API (optional)
-
-If you prefer to run the bot as a web service, start the FastAPI server:
-
-```bash
-uvicorn brain:app --host 0.0.0.0 --port 8000
-```
-
-The API exposes endpoints for triggering a manual run and inspecting status. See `brain.py` for details.
-
-## ⏰ Auto‑start on macOS login (LaunchAgent)
-
-```bash
 cp com.santusht.ai-readme-bot.plist ~/Library/LaunchAgents/
 launchctl load ~/Library/LaunchAgents/com.santusht.ai-readme-bot.plist
 ```
@@ -109,10 +94,10 @@ tail -f data/bot.log
 
 ## 🛡️ Safety Guardrails
 
-- **README.md only** — no other files touched
-- **≤35% line change cap** per day
-- Rejects patches that remove the primary `# Title`
-- Rejects unclosed code fences
+- **README.md only** — no other files touched  
+- **≤35% line change cap** per day  
+- Rejects patches that remove the primary `# Title`  
+- Rejects unclosed code fences  
 - **1 project per day** enforced via SQLite
 
 ## 🗂️ Project Structure
@@ -126,3 +111,14 @@ bot/
 ├── .env                              # Your Groq API key (not committed)
 └── data/
     ├── bot.db                        # SQLite: project inventory + run history
+    ├── vectors.json                  # Offline vector embeddings
+    └── bot.log                       # Daily run logs
+```
+
+## 📦 Requirements
+
+- Python 3.12+
+- `gh` CLI (authenticated)
+- `git`
+- Groq API key (free tier works)
+- Optional: FastAPI (required only for API mode)
