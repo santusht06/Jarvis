@@ -39,28 +39,13 @@ GROQ_API_KEY=gsk_your_key_here
 gh auth login
 ```
 
-./venv/bin/pip install -r requirements.txt
-```
-
-Create a `.env` file:
-
-```env
-GROQ_API_KEY=gsk_your_key_here
-```
-
-Make sure you're authenticated with GitHub CLI:
-
-```bash
-gh auth login
-```
-
 ## ⚙️ Configuration
 
 The repository includes a `.env.example` file that documents all optional environment variables:
 
-- `GROQ_API_KEY` – **required** Groq API key.
-- `GROQ_MODEL` – Model to use (default: `llama-3.3-70b-versatile`).
-- `GITHUB_TOKEN` – Optional GitHub token if `gh auth login` is not already active.
+- `GROQ_API_KEY` – **required** Groq API key.  
+- `GROQ_MODEL` – Model to use (default: `llama-3.3-70b-versatile`).  
+- `GITHUB_TOKEN` – Optional GitHub token if `gh auth login` is not already active.  
 - `OPENAI_API_KEY`, `GEMINI_API_KEY`, `OLLAMA_BASE_URL` – Optional alternative LLM providers.
 
 Copy `.env.example` to `.env` and fill in the values you need.
@@ -73,13 +58,28 @@ Copy `.env.example` to `.env` and fill in the values you need.
 
 ## 📦 Usage
 
-- **Manual run**: Execute the command above to trigger an immediate README improvement.
-- **API mode**: Start the FastAPI server (optional) to expose endpoints for manual triggers and status checks:
+- **Manual run**: Execute the command above to trigger an immediate README improvement.  
+- **API mode** (optional): Start the FastAPI server to expose endpoints for manual triggers and status checks:
 
   ```bash
   uvicorn brain:app --host 0.0.0.0 --port 8000
   ```
 
+  See `brain.py` for endpoint details.
+
+## 🌐 API (optional)
+
+If you prefer to run the bot as a web service, start the FastAPI server:
+
+```bash
+uvicorn brain:app --host 0.0.0.0 --port 8000
+```
+
+The API exposes endpoints for triggering a manual run and inspecting status. See `brain.py` for details.
+
+## ⏰ Auto‑start on macOS login (LaunchAgent)
+
+```bash
   See `brain.py` for endpoint details.
 
 ## 🌐 API (optional)
@@ -126,8 +126,3 @@ bot/
 ├── .env                              # Your Groq API key (not committed)
 └── data/
     ├── bot.db                        # SQLite: project inventory + run history
-    ├── vectors.json                  # Offline vector embeddings
-    └── bot.log                       # Daily run logs
-```
-
-## 📦 Requirements
