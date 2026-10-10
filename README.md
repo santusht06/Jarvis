@@ -21,7 +21,7 @@ Runs **once per day** automatically (via macOS LaunchAgent). On each run it:
 ## 🚀 Installation
 
 ```bash
-git clone https://github.com/santusht06/bot.git
+git clone [https://github.com/santusht06/bot.git](https://github.com/santusht06/bot.git)
 cd bot
 python3 -m venv venv
 ./venv/bin/pip install -r requirements.txt
